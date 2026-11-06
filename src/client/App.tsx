@@ -278,7 +278,7 @@ export function App() {
                         </td>
                         <td className="mono-cell">
                           <span style={{ color: "var(--accent-color)", fontWeight: 600 }}>
-                            {item.tempCelsius.toFixed(2)}°C
+                            {item.tempCelsius != null ? `${item.tempCelsius.toFixed(2)}°C` : "-"}
                           </span>
                         </td>
                         <td style={{ textTransform: "capitalize" }}>{item.weatherDescription}</td>
