@@ -15,7 +15,17 @@ Repositori ini berisi solusi lengkap untuk **Section A (Mini Test)** rekrutmen D
 
 ---
 
-## 2. Ringkasan Tugas & Solusi Algoritma
+## 2. Tangkapan Layar Aplikasi (Live Production UI)
+
+### A. Tab 1: Small Program (Reverse 100–1 FooBar & Matrix Inspection)
+![Tab 1: FooBar and Prime Matrix](./docs/screenshots/01-foobar-matrix.png)
+
+### B. Tab 2: Jakarta 5-Day Weather Forecast (Cache HIT & Daily Table)
+![Tab 2: Weather Forecast and Cache Status](./docs/screenshots/02-weather-forecast.png)
+
+---
+
+## 3. Ringkasan Tugas & Solusi Algoritma
 
 ### A. Mini Test 1: Small Program (100 to 1, Non-Prime, FooBar)
 * **Aturan #1 (Eliminasi Bilangan Prima)**: Angka prima ($n > 1$ dengan pembagi positif hanya $1$ dan dirinya sendiri) **dilewati sepenuhnya** dan tidak dicetak. Angka $2, 3, 5, 7, \dots, 97$ dieliminasi (bahkan angka $3$ dan $5$ tidak dicetak sebagai `Foo` atau `Bar`).
@@ -52,7 +62,7 @@ Repositori ini berisi solusi lengkap untuk **Section A (Mini Test)** rekrutmen D
 
 ---
 
-## 3. Skalabilitas & Concurrency: Proteksi Anti-Rate-Limit
+## 4. Skalabilitas & Concurrency: Proteksi Anti-Rate-Limit
 
 Akun gratis OpenWeatherMap dibatasi $60\text{ request/menit}$. Untuk menjamin aplikasi dapat diakses oleh ribuan pengguna secara bersamaan tanpa lonjakan latensi atau penolakan HTTP `429 Too Many Requests`, backend mengimplementasikan arsitektur proteksi ganda:
 
@@ -65,7 +75,7 @@ Akun gratis OpenWeatherMap dibatasi $60\text{ request/menit}$. Untuk menjamin ap
 
 ---
 
-## 4. Kepatuhan Prinsip SOLID
+## 5. Kepatuhan Prinsip SOLID
 
 * **S (Single Responsibility Principle)**: `FooBarService` khusus logika angka, `OpenWeatherProvider` khusus HTTP transport, `WeatherService` khusus agregasi & formatting, `MemoryCacheService` khusus caching & coalescing.
 * **O (Open/Closed Principle)**: `WeatherService` mengonsumsi kontrak interface `IWeatherProvider`. Menambahkan provider baru (misal BMKG atau Mock) tidak memerlukan modifikasi kode inti service.
@@ -75,7 +85,7 @@ Akun gratis OpenWeatherMap dibatasi $60\text{ request/menit}$. Untuk menjamin ap
 
 ---
 
-## 5. Panduan Menjalankan Proyek (Untuk Reviewer / Tester)
+## 6. Panduan Menjalankan Proyek (Untuk Reviewer / Tester)
 
 ### Prasyarat
 * Node.js v20+ atau v22+
@@ -119,7 +129,7 @@ Buka browser di `http://localhost:3000` (Vite Client) atau `http://localhost:300
 
 ---
 
-## 6. Pengujian Otomatis (Testing Suite)
+## 7. Pengujian Otomatis (Testing Suite)
 
 Proyek ini dilengkapi suite pengujian bertingkat dengan **100% tingkat kelulusan**:
 
@@ -140,7 +150,7 @@ Menguji navigasi tab OpenUI, visual output raw, toggle inspeksi matriks bilangan
 
 ---
 
-## 7. Arsitektur Antarmuka Web (OpenUI Anti-AI Standard)
+## 8. Arsitektur Antarmuka Web (OpenUI Anti-AI Standard)
 
 Antarmuka web dirancang mengacu pada dokumen [`DESIGN.md`](./DESIGN.md):
 * **Natural Utilitarian**: Tanpa gradien neon atau ornamen kosmetik khas generator AI; kanvas abu-abu lembut `#F6F8FA` dengan kontainer kartu berbatas tajam `1px solid #D1D9E0`.

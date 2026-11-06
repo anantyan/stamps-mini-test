@@ -348,12 +348,6 @@ export function App() {
           </div>
         </section>
       )}
-
-      {/* Footer */}
-      <footer className="page-footer">
-        Stamps Technical Assessment — Section A (Mini Test) · Built with Clean Architecture & SOLID
-        Principles
-      </footer>
     </div>
   );
 }
