@@ -1,0 +1,109 @@
+name: CI & Cloud Deployment
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  verify:
+    name: Lint, Test, E2E & Build
+    runs-on: ubuntu-latest
+    env:
+      OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+      PORT: 3001
+      NODE_ENV: test
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Check Formatting & Lint (Biome)
+        run: npm run format:check && npm run lint
+
+      - name: TypeScript Typecheck
+        run: npm run typecheck
+
+      - name: Run Unit & Integration Tests (Vitest)
+        run: npm test
+
+      - name: Build Production Client
+        run: npm run build:client
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E Tests (Playwright)
+        run: npm run test:e2e
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3001
+
+      - name: Upload Playwright Artifacts on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  docker:
+    name: Build & Push Container to ACR
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Azure Container Registry
+        if: env.ACR_LOGIN_SERVER != ''
+        env:
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Prepare Image Tags
+        id: tags
+        env:
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+        run: |
+          {
+            echo "list<<EOF"
+            echo "ghcr.io/${{ github.repository }}:latest"
+            echo "ghcr.io/${{ github.repository }}:${{ github.sha }}"
+            if [ -n "$ACR_LOGIN_SERVER" ]; then
+              echo "$ACR_LOGIN_SERVER/stamps-mini-test:latest"
+              echo "$ACR_LOGIN_SERVER/stamps-mini-test:${{ github.sha }}"
+            fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.tags.outputs.list }}
