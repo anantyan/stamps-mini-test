@@ -20,8 +20,84 @@ Repositori ini berisi solusi lengkap untuk **Section A (Mini Test)** rekrutmen D
 ### A. Tab 1: Small Program (Reverse 100–1 FooBar & Matrix Inspection)
 ![Tab 1: FooBar and Prime Matrix](./docs/screenshots/01-foobar-matrix.png)
 
+#### 📌 Poin-Poin Penting Source Code (Tab 1):
+* **Lokasi Source Code**: [`src/core/foobar/foobar.service.ts`](./src/core/foobar/foobar.service.ts)
+* **Algoritma Eliminasi Bilangan Prima ($O(\sqrt{n})$)**:
+  Angka prima ($n > 1$ dengan faktor pembagi hanya 1 dan dirinya sendiri) dievaluasi pertama kali dan langsung dieliminasi sebelum evaluasi kelipatan modulo:
+  ```typescript
+  // src/core/foobar/foobar.service.ts
+  public isPrime(n: number): boolean {
+    if (n <= 1) return false; // 1 BUKAN prima -> tetap dicetak di akhir
+    if (n <= 3) return true;  // 2 dan 3 adalah prima -> dilewati
+    if (n % 2 === 0 || n % 3 === 0) return false;
+    for (let i = 5; i * i <= n; i += 6) {
+      if (n % i === 0 || n % (i + 2) === 0) return false;
+    }
+    return true;
+  }
+  ```
+* **Hierarki Substitusi Modulo & Filter Flow**:
+  ```typescript
+  public evaluateNumber(n: number): string | null {
+    if (this.isPrime(n)) return null;     // Aturan 1: Prima dilewati (return null)
+    if (n % 15 === 0) return "FooBar";     // Aturan 2: Kelipatan 3 & 5
+    if (n % 3 === 0) return "Foo";        // Aturan 3: Kelipatan 3
+    if (n % 5 === 0) return "Bar";        // Aturan 4: Kelipatan 5
+    return n.toString();                  // Aturan 5: Angka asli
+  }
+  ```
+* **Hasil Eksekusi**:
+  * Loop berjalan mundur dari $100 \to 1$ (`for (let i = 100; i >= 1; i--)`).
+  * Tepat **75 angka tercetak** dan **25 bilangan prima dieliminasi** ($2, 3, 5, \dots, 97$).
+  * Angka $1$ bukan prima sehingga tercetak di paling akhir.
+  * Angka $91$ adalah komposit ($7 \times 13 = 91$) sehingga tetap tercetak sebagai `91`.
+  * Hasil digabungkan horizontal satu baris menggunakan separator koma-spasi: `.join(", ")`.
+
+---
+
 ### B. Tab 2: Jakarta 5-Day Weather Forecast (Cache HIT & Daily Table)
 ![Tab 2: Weather Forecast and Cache Status](./docs/screenshots/02-weather-forecast.png)
+
+#### 📌 Poin-Poin Penting Source Code (Tab 2):
+* **Lokasi Source Code**:
+  * Logika Cuaca & Deduplikasi: [`src/core/weather/weather.service.ts`](./src/core/weather/weather.service.ts)
+  * Proteksi Skalabilitas & Single-Flight Cache: [`src/core/cache/memory-cache.service.ts`](./src/core/cache/memory-cache.service.ts)
+* **Deduplikasi 40 Data Titik Menjadi Tepat 1 Suhu per Hari Kalender (WIB / UTC+7)**:
+  OpenWeatherMap mengembalikan 40 data titik interval 3-jam dalam UTC. Service mengonversinya ke kalender lokal Jakarta (WIB / $+7$ jam) dan memilih titik pengukuran tengah hari (`12:00:00 WIB`) yang paling stabil mewakili cuaca hari itu:
+  ```typescript
+  // src/core/weather/weather.service.ts
+  const jakartaOffsetSec = 25200; // UTC+7 offset untuk Jakarta
+  const localDate = new Date((entry.dt + jakartaOffsetSec) * 1000);
+  const dateKey = localDate.toISOString().slice(0, 10); // Format YYYY-MM-DD lokal
+
+  // Prioritaskan sampel tengah hari (12:00 WIB)
+  const localHour = localDate.getUTCHours();
+  const distanceToNoon = Math.abs(localHour - 12);
+  if (!existing || distanceToNoon < existing.distanceToNoon) {
+    grouped.set(dateKey, { entry, distanceToNoon });
+  }
+  ```
+* **Presisi Format Teks Standar Soal**:
+  ```typescript
+  // Format baris persis seperti spesifikasi soal: "Wed, 06 Nov 2026: 31.16°C"
+  const formattedLine = `${formattedDate}: ${tempCelsius.toFixed(2)}°C`;
+  ```
+* **Proteksi Concurrency: Single-Flight Request Coalescing (Anti-Rate-Limit)**:
+  Akun gratis OpenWeather dibatasi $60\text{ req/menit}$. Saat terjadi lonjakan akses bersamaan (*cold cache burst*), sistem mengunci promise sehingga hanya **1 request** yang memanggil API eksternal; ratusan request lainnya menunggu promise yang sama:
+  ```typescript
+  // src/core/cache/memory-cache.service.ts
+  if (this.inflightMap.has(key)) {
+    this.stats.coalescedRequests++; // Request bergabung ke panggilan yang sedang berjalan
+    return await this.inflightMap.get(key)!;
+  }
+
+  // Simpan hasil ke In-Memory Cache (TTL 15 Menit)
+  this.cache.set(key, { data, expiresAt: Date.now() + this.ttlMs });
+  ```
+* **Performa Cache Live**:
+  * Panggilan pertama: `Fresh Fetch` dari OpenWeatherMap.
+  * Panggilan berikutnya dalam 15 menit: Dijawab instan dari memori server dalam tempo **$< 1\text{ ms}$** (`badge-success: Cache HIT (<1ms)`).
+  * Dilengkapi fallback data terakhir (*Stale-While-Revalidate*) jika upstream mengalami gangguan jaringan.
 
 ---
 
